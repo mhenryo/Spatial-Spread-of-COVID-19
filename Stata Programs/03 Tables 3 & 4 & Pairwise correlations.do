@@ -1,26 +1,13 @@
 set more off
 clear all
 
-//ssc install eimpact3
-
-//cd "C:\Users\mhenry\Dropbox\Covid19\IWCEE\DATA"
-// Data already restricted to the study period: March 1 - May 23, 2020 and fo the 48 contiguous states + DC
-
+// NOTES:
 // confirmed_adj_0 is the # of confirmed cases (counts) in May 23, 2020
 // confirmed_adj_14 is the # of confirmed cases (counts) in May 9, 2020
 // confirmed_adj_28 is the # of confirmed cases (counts) in April 25, 2020
 
-/*
-capture log close
-//loc lgn covid19_SAR_2019data_spectral		// to use when using spectral normalization of W
-loc lgn covid19_SAR_2019data_minmax_v2		// to use when using minmax normalization of W   CHOSEN!!!
-global logout "U:\Personal\COVID-19\log"
-*** Opening the log
-log using "$logout\\`lgn'", replace
-*/
-
 loc yr 2019
-loc dir1 /Users/miguelhenry/Library/Mobile Documents/com~apple~CloudDocs/RESEARCH/COVID-19/Stata Data/
+loc dir1 [PATH]
 
 cd "`dir1'"
 use usaconfirmed_adj_demog_`yr', clear
@@ -31,30 +18,19 @@ g lnpop_density = ln(pop_density)
 ***** Pairwise correlations *****
 pwcorr pct_male pct_black pct_hisp pct_1_19-pct_ge80 lnpop_density pm25 medinc unins index_zscore, sig
 mat corr = r(C)
-
-/*
-outtable using "C:\Users\mhenry\Dropbox\Covid19\IWCEE\RESULTS\correlm_2019", mat(corr) replace nobox center caption("Paiwise Correlations of Socioeconomic-Demographic Variables") ///
+outtable using correlm_2019, mat(corr) replace nobox center caption("Paiwise Correlations of Socioeconomic-Demographic Variables") ///
 format(%6.3f) 
-*/
 
-cd "/Users/miguelhenry/Dropbox/Covid19/IWCEE/DATA/USCB/2019/Input Data/ShapeFiles/"
 **** CONSTRUCTION OF W matrix ******
 spset, modify shpfile(usacounties`yr'_shp)
-
 **** Creating CDIST contiguity ROOK spatial weight matrix with default normalization
 **** The matrix will be normalized so that its largest eigenvalue is 1.
-//spmatrix create contiguity CDIST`yr', rook normalize(spectral) replace
 spmatrix create contiguity CDIST`yr', rook normalize(minmax) replace
-
-cd "`dir1'"
 spmatrix save CDIST`yr' using CDIST`yr', replace
 capt drop *hat	
 clonevar Ct = confirmed_adj_0
 clonevar Ct14 = confirmed_adj_14
 clonevar Ct28 = confirmed_adj_28
-desc confirmed0
-//regress confirmed_adj_0
-//estat moran, errorlag(CDIST`yr')
 
 ****************************************************
 ********** SAR models using previous W matrix ******
@@ -83,8 +59,6 @@ mata: cs=st_matrixcolstripe("b_"); cs[rows(cs)-1,1]="W"; cs[rows(cs)-1,2]="Ct"; 
 eststo: qui eimpact3 b_ v_ `depvar' en_ ll_ r2_p_ p_ p_c_
 
 *** Table 3, Column 2
-// eststo clear
-// sex
 spregress Ct Ct14 Ct28 pct_male, dvarlag(CDIST`yr') errorlag(CDIST`yr') ml nolog vce(robust)
 estat impact
 mat b_ = r(b_total)
@@ -104,7 +78,6 @@ mata: cs=st_matrixcolstripe("b_"); cs[rows(cs)-1,1]="W"; cs[rows(cs)-1,2]="Ct"; 
 eststo: qui eimpact3 b_ v_ `depvar' en_ ll_ r2_p_ p_ p_c_
 
 *** Table 3, Column 3
-// race & ethnicity
 spregress Ct Ct14 Ct28 pct_black pct_hisp, dvarlag(CDIST`yr') errorlag(CDIST`yr') ml nolog vce(robust)
 test pct_black pct_hisp
 estat impact
@@ -125,7 +98,6 @@ mata: cs=st_matrixcolstripe("b_"); cs[rows(cs)-1,1]="W"; cs[rows(cs)-1,2]="Ct"; 
 eststo: qui eimpact3 b_ v_ `depvar' en_ ll_ r2_p_ p_ p_c_
 
 *** Table 3, Column 4
-// sex & race & ethnicity
 spregress Ct Ct14 Ct28 pct_male pct_black pct_hisp, dvarlag(CDIST`yr') errorlag(CDIST`yr') ml nolog vce(robust)
 test pct_male pct_black pct_hisp
 estat impact
@@ -204,14 +176,11 @@ mata: cs=st_matrixcolstripe("b_"); cs[rows(cs)-1,1]="W"; cs[rows(cs)-1,2]="Ct"; 
 eststo: qui eimpact3 b_ v_ `depvar' en_ ll_ r2_p_ p_ p_c_
 
 esttab, star(* 0.1 ** 0.05 *** 0.01) nomti ti("Spatial models of COVID-19 Cases: I") scalars("ll LogLikelihood" "r2_p PseudoR2" "p model pv" "p_c spatial pv") gap sfmt(%12.3f) varw(18)
-
-esttab using "C:\Users\mhenry\Dropbox\Covid19\IWCEE\RESULTS\table3_`yr'_v2.tex", star(* 0.1 ** 0.05 *** 0.01) nomti ti("Average Total Impact of Spatial Models of COVID-19 Cases: I")  scalars("ll LogLikelihood" "r2_p PseudoR2" "p model pv" "p_c spatial pv") ///
+esttab using table3_`yr'.tex, star(* 0.1 ** 0.05 *** 0.01) nomti ti("Average Total Impact of Spatial Models of COVID-19 Cases: I")  scalars("ll LogLikelihood" "r2_p PseudoR2" "p model pv" "p_c spatial pv") ///
 gap sfmt(%12.3f) varw(18) rename(CDIST`yr':Ct $\hat{\rho}$ CDIST`yr':e.Ct $\hat{\lambda}$) replace posthead("{\small\label{resultsA}") prefoot("}") 
-//type "C:\Users\mhenry\Dropbox\Covid19\IWCEE\RESULTS\table3_`yr'.tex"
 
-*** TABLE 4, Column 1
+*** Table 4, Column 1
 eststo clear
-// pm2.5
 spregress Ct Ct14 Ct28 pm25, dvarlag(CDIST`yr') errorlag(CDIST`yr') ml nolog vce(robust)
 estat impact
 mat b_ = r(b_total)
@@ -230,7 +199,7 @@ mata: v0=J(cols(v11),2,0); v33=v11,v0 \ v0',v22;  st_matrix("v_",v33)
 mata: cs=st_matrixcolstripe("b_"); cs[rows(cs)-1,1]="W"; cs[rows(cs)-1,2]="Ct"; cs[rows(cs),1]="W"; cs[rows(cs),2]="e.Ct"; st_matrixcolstripe("b_",cs);st_matrixrowstripe("v_",cs);st_matrixcolstripe("v_",cs)
 eststo: qui eimpact3 b_ v_ `depvar' en_ ll_ r2_p_ p_ p_c_
 
-// unins, Column 2
+// Table 4, Column 2
 spregress Ct Ct14 Ct28 unins, dvarlag(CDIST`yr') errorlag(CDIST`yr') ml nolog vce(robust)
 estat impact
 mat b_ = r(b_total)
@@ -249,7 +218,7 @@ mata: v0=J(cols(v11),2,0); v33=v11,v0 \ v0',v22;  st_matrix("v_",v33)
 mata: cs=st_matrixcolstripe("b_"); cs[rows(cs)-1,1]="W"; cs[rows(cs)-1,2]="Ct"; cs[rows(cs),1]="W"; cs[rows(cs),2]="e.Ct"; st_matrixcolstripe("b_",cs);st_matrixrowstripe("v_",cs);st_matrixcolstripe("v_",cs)
 eststo: qui eimpact3 b_ v_ `depvar' en_ ll_ r2_p_ p_ p_c_
 
-// index_zcore, Column 3
+// Table 4, Column 3
 spregress Ct Ct14 Ct28 index_zscore, dvarlag(CDIST`yr') errorlag(CDIST`yr') ml nolog vce(robust)
 estat impact
 mat b_ = r(b_total)
@@ -268,7 +237,7 @@ mata: v0=J(cols(v11),2,0); v33=v11,v0 \ v0',v22;  st_matrix("v_",v33)
 mata: cs=st_matrixcolstripe("b_"); cs[rows(cs)-1,1]="W"; cs[rows(cs)-1,2]="Ct"; cs[rows(cs),1]="W"; cs[rows(cs),2]="e.Ct"; st_matrixcolstripe("b_",cs);st_matrixrowstripe("v_",cs);st_matrixcolstripe("v_",cs)
 eststo: qui eimpact3 b_ v_ `depvar' en_ ll_ r2_p_ p_ p_c_
 
-// pm25 + unins + male, Column 4
+// Table 4, Column 4
 spregress Ct Ct14 Ct28 pm25 unins pct_male, dvarlag(CDIST`yr') errorlag(CDIST`yr') ml nolog vce(robust)
 test pm25 unins pct_male
 estat impact
@@ -288,8 +257,7 @@ mata: v0=J(cols(v11),2,0); v33=v11,v0 \ v0',v22;  st_matrix("v_",v33)
 mata: cs=st_matrixcolstripe("b_"); cs[rows(cs)-1,1]="W"; cs[rows(cs)-1,2]="Ct"; cs[rows(cs),1]="W"; cs[rows(cs),2]="e.Ct"; st_matrixcolstripe("b_",cs);st_matrixrowstripe("v_",cs);st_matrixcolstripe("v_",cs)
 eststo: qui eimpact3 b_ v_ `depvar' en_ ll_ r2_p_ p_ p_c_
 
-// Introducing Income
-// medinc, Column 5
+// Table 4, Column 5
 spregress Ct Ct14 Ct28 medinc, dvarlag(CDIST`yr') errorlag(CDIST`yr') ml nolog vce(robust)
 estat impact
 mat b_ = r(b_total)
@@ -308,7 +276,7 @@ mata: v0=J(cols(v11),2,0); v33=v11,v0 \ v0',v22;  st_matrix("v_",v33)
 mata: cs=st_matrixcolstripe("b_"); cs[rows(cs)-1,1]="W"; cs[rows(cs)-1,2]="Ct"; cs[rows(cs),1]="W"; cs[rows(cs),2]="e.Ct"; st_matrixcolstripe("b_",cs);st_matrixrowstripe("v_",cs);st_matrixcolstripe("v_",cs)
 eststo: qui eimpact3 b_ v_ `depvar' en_ ll_ r2_p_ p_ p_c_
 
-// Column 4 + medinc, Column 6
+// Table 4, Column 6
 spregress Ct Ct14 Ct28 pm25 unins pct_male medinc, dvarlag(CDIST`yr') errorlag(CDIST`yr') ml nolog vce(robust)
 test pm25 unins pct_male medinc
 estat impact
@@ -328,7 +296,7 @@ mata: v0=J(cols(v11),2,0); v33=v11,v0 \ v0',v22;  st_matrix("v_",v33)
 mata: cs=st_matrixcolstripe("b_"); cs[rows(cs)-1,1]="W"; cs[rows(cs)-1,2]="Ct"; cs[rows(cs),1]="W"; cs[rows(cs),2]="e.Ct"; st_matrixcolstripe("b_",cs);st_matrixrowstripe("v_",cs);st_matrixcolstripe("v_",cs)
 eststo: qui eimpact3 b_ v_ `depvar' en_ ll_ r2_p_ p_ p_c_
 
-// sex, race & ethnicity + density + medinc, Column 7
+// Table 4, Column 7
 spregress Ct Ct14 Ct28 pct_male pct_black pct_hisp lnpop_density medinc, dvarlag(CDIST`yr') errorlag(CDIST`yr') ml nolog vce(robust)
 test pct_male pct_black pct_hisp lnpop_density medinc
 estat impact
@@ -350,15 +318,5 @@ eststo: qui eimpact3 b_ v_ `depvar' en_ ll_ r2_p_ p_ p_c_
 
 esttab, star(* 0.1 ** 0.05 *** 0.01) nomti ti("Average Total Impact of Spatial models of COVID-19 Cases: II") scalars("ll LogLikelihood" "r2_p PseudoR2" "p model pv" "p_c spatial pv")  ///
 gap sfmt(%12.3f) varw(18) replace posthead("{\scriptsize") prefoot("}")
-
-esttab using "C:\Users\mhenry\Dropbox\Covid19\IWCEE\RESULTS\table4_`yr'_v2.tex", star(* 0.1 ** 0.05 *** 0.01) nomti ti("Spatial models of COVID-19 Cases: II") scalars("ll LogLikelihood" "r2_p PseudoR2" "p model pv" "p_c spatial pv")  ///
+esttab using table4_`yr'.tex, star(* 0.1 ** 0.05 *** 0.01) nomti ti("Spatial models of COVID-19 Cases: II") scalars("ll LogLikelihood" "r2_p PseudoR2" "p model pv" "p_c spatial pv")  ///
 gap sfmt(%12.3f) varw(18) rename(CDIST`yr':Ct $\hat{\rho}$ CDIST`yr':e.Ct $\hat{\lambda}$) replace posthead("{\small\label{resultsB}") prefoot("}")
-
-/*
-log close
-
-translator set smcl2pdf pagesize custom
-translator set smcl2pdf pagewidth 11
-translator set smcl2pdf pageheight 8.5
-translate "$logout\\`lgn'.smcl" "$logout\\`lgn'.pdf", replace
-*/
