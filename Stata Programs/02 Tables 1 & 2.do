@@ -2,7 +2,7 @@
 clear all
 set more off
 
-cd "/Users/miguelhenry/Library/Mobile Documents/com~apple~CloudDocs/RESEARCH/COVID-19/Stata Data/"
+cd " [PATH] "
 use usaconfirmed_adj_demog_2019, clear
 
 *** Table 1
