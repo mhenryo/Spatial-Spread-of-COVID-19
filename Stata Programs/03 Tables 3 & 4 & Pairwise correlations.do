@@ -1,11 +1,6 @@
 set more off
 clear all
 
-// NOTES:
-// confirmed_adj_0 is the # of confirmed cases (counts) in May 23, 2020
-// confirmed_adj_14 is the # of confirmed cases (counts) in May 9, 2020
-// confirmed_adj_28 is the # of confirmed cases (counts) in April 25, 2020
-
 loc yr 2019
 
 use usaconfirmed_adj_demog_`yr', clear
