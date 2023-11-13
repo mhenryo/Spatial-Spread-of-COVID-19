@@ -2,7 +2,9 @@
 clear all
 set more off
 
-cd " [PATH] "
+loc dir1 [PATH]
+
+cd "`dir1'"
 use usaconfirmed_adj_demog_2019, clear
 
 *** Table 1
