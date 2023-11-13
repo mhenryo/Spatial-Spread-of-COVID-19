@@ -1,6 +1,9 @@
 set more off
 clear all
 
+// NOTE: impact3.ado is an ado file that must be stored in the appropriate directory for ado files. 
+// Run the command -adopath- if you do not know what the directory is.
+
 loc yr 2019
 
 use usaconfirmed_adj_demog_`yr', clear
