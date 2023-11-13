@@ -7,9 +7,7 @@ clear all
 // confirmed_adj_28 is the # of confirmed cases (counts) in April 25, 2020
 
 loc yr 2019
-loc dir1 [PATH]
 
-cd "`dir1'"
 use usaconfirmed_adj_demog_`yr', clear
 
 replace medinc = medinc/1e3
