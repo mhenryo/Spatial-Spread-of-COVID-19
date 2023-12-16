@@ -7,10 +7,8 @@ loc qq quietly
 *** US Census Bureau Demographic Data ****
 ******************************************
 
-import delimited "cc_est2019-alldata (accessed on Dec 16 2020).csv"
-keep if year==12
+import delimited "cc_est2019-alldata (accessed on Dec 16 2020)_red.csv"
 
-keep state county tot_pop tot_male tot_female wac_male-bac_female h_male h_female agegrp
 g fips = state*1000 + county
 
 g white = wac_male + wac_female 	
