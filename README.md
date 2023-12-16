@@ -8,6 +8,20 @@ The Stata Program folder contains all the needed programs to reproduce Tables 1-
 
 The 2019 Cartographic Boundary Shapefiles (cb_2019_us_county_500k.zip) used in the do-file *01 prep ALL data.do* are available at the [US Census Bureau](https://www2.census.gov/geo/tiger/GENZ2019/shp/).
 
+
+[IWCEE_Appendix.pdf](https://github.com/mhenryo/spatial-spread-of-COVID-19/files/13694097/IWCEE_Appendix.pdf)
+
+
+
+
+
+
+
+
+
+
+
+
 # Authors
 Christopher F. Baum, Boston College, Chestnut Hill, MA 02467-3806 USA; E-mail: kit.baum [at] bc [dot] edu
 
