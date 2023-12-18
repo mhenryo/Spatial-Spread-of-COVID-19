@@ -80,7 +80,6 @@ nmissing
 clear all
 loc u2 2019_a		// tab: "Additional Measure Data" which has Median HH Income
 loc qq quietly 
-cd "C:\Users\mhenry\Dropbox\Covid19\CountyHealthRankings\usedIWCEE"
 
 ****** MATA function that searches for and keep the essential variables and their content infor *****
 mata
